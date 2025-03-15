@@ -1,5 +1,7 @@
 'use strict';
 
+const { type } = require("os");
+
 module.exports = {
   up: async (queryInterface, Sequelize) => {
     await queryInterface.createTable('group_requests', {
@@ -9,37 +11,28 @@ module.exports = {
         allowNull: false,
         primaryKey: true
       },
-      user_id: {
-        type: Sequelize.UUID,
-        allowNull: false,
-        references: {
-          model: 'users',  
-          key: 'user_id',  
-        },
-        onDelete: 'CASCADE' 
-      },
-      group_id: {
-        type: Sequelize.UUID,
-        allowNull: false,
-        references: {
-          model: 'groups', 
-          key: 'group_id', 
-        },
-        onDelete: 'CASCADE'  
-      },
-      requested_at: {
-        type: Sequelize.DATE,
-        defaultValue: Sequelize.literal('CURRENT_TIMESTAMP'),
-        allowNull: false
+      email: {
+        type: Sequelize.STRING,
+        allowNull: true,
       },
       requested_by: {
         type: Sequelize.UUID,
         allowNull: false,
         references: {
-          model: 'users',  
-          key: 'user_id',  
+          model: 'group_members',  
+          key: 'member_id',  
         },
         onDelete: 'CASCADE'  
+      },
+      user_registered: {
+        type: Sequelize.BOOLEAN,
+        defaultValue: true,  
+        allowNull: false,     
+      },
+      requested_at: {
+        type: Sequelize.DATE,
+        defaultValue: Sequelize.literal('CURRENT_TIMESTAMP'),
+        allowNull: false
       },
       status: {
         type: Sequelize.ENUM('requested', 'rejected'),

@@ -1,8 +1,8 @@
 import { ApolloServer } from 'apollo-server-express';
 import express from 'express';
 import jwt from 'jsonwebtoken';
-import { resolvers } from './Schema/resolvers.js';
-import { typeDefs } from './Schema/typedefs.js';
+import { resolvers } from './schema/resolvers.js';
+import { typeDefs } from './schema/typedefs.js';
 import dotenv from 'dotenv';
 dotenv.config();
 

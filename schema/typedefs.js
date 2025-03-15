@@ -26,6 +26,18 @@ export const typeDefs = `#graphql
         joined_at: DATETIME
         role: String
     }
+    type GroupInviteRequest{
+        request_id: String
+        admin_name: String
+        admin_email: String
+        group_name: String
+
+        email: String
+        user_registered: Boolean
+        requested_by: String
+        requested_at: DATETIME
+        status: String
+    }
     type Auth{
         token: String
         user_id: String
@@ -35,6 +47,9 @@ export const typeDefs = `#graphql
         groupList(user_id: String!): [Group!]
         group(group_id: String!): Group!
         group_member(member_id: String!): GroupMember!
+
+        getGroupInvitedList(admin_id: String!): [GroupInviteRequest!]!
+        getGroupJoinRequests(email: String!): [GroupInviteRequest!]!
     }
     type Mutation {
         signup(email: String!, name: String!, password: String!): Auth
@@ -47,6 +62,8 @@ export const typeDefs = `#graphql
         addUserToGroup(group_id: String!, user_id: String!, role: String): String
         deleteUserFromGroup(admin_id: String!, member_id: String!): String
         changeRoleInGroup(admin_id: String!, member_id: String!): String
+
+        sendGroupRequests(admin_id: String!, emails: [String!]!): String
     }
 
 `
