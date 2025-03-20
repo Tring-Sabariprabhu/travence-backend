@@ -43,7 +43,7 @@ export const typeDefs = `#graphql
         user_id: String
     }
     type Query {
-        getUser(user_id: String): User
+        getAuthUser: User
         groupList(user_id: String!): [Group!]
         group(group_id: String!): Group!
         group_member(member_id: String!): GroupMember!
@@ -63,7 +63,9 @@ export const typeDefs = `#graphql
         deleteUserFromGroup(admin_id: String!, member_id: String!): String
         changeRoleInGroup(admin_id: String!, member_id: String!): String
 
-        sendGroupRequests(admin_id: String!, emails: [String!]!): String
+        sendGroupJoinRequests(admin_id: String!, emails: [String!]!): String
+        resendGroupJoinRequests(admin_id: String!, requestIDs: [String!]!): String
+        deleteGroupJoinRequests(admin_id: String!, requestIDs: [String!]!): String
     }
 
 `
