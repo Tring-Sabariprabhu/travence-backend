@@ -320,12 +320,12 @@ export const resolvers = {
                     const {rows: requestRecord} = await db.query(`UPDATE group_requests SET requested_at = CURRENT_TIMESTAMP, status = $1 WHERE request_id = $2 RETURNING email`, ['requested', requestID]);
                     const email = requestRecord[0]?.email;
                     if(email){
-                        // SendEmail(
-                        //     {
-                        //         destinationEmail: email,
-                        //         subject: "Invite to Join Group in Travence",
-                        //         message: `You have been invited by ${adminProfile[0]?.name} to join the Group "${groupdata[0]?.name}" on Travence!`
-                        //     });
+                        SendEmail(
+                            {
+                                destinationEmail: email,
+                                subject: "Invite to Join Group in Travence",
+                                message: `You have been invited by ${adminProfile[0]?.name} to join the Group "${groupdata[0]?.name}" on Travence!`
+                            });
                     }
                     
                 }
@@ -388,12 +388,12 @@ export const resolvers = {
                          VALUES ($1, $2, $3)`,
                         [email, adminInGroup?.member_id, registered]);
 
-                    // SendEmail(
-                    //     {
-                    //         destinationEmail: email,
-                    //         subject: "Invite to Join Group in Travence",
-                    //         message: `You have been invited by ${adminProfile[0]?.name} to join the group "${groupdata[0]?.name}" on Travence!`
-                    //     });
+                    SendEmail(
+                        {
+                            destinationEmail: email,
+                            subject: "Invite to Join Group in Travence",
+                            message: `You have been invited by ${adminProfile[0]?.name} to join the group "${groupdata[0]?.name}" on Travence!`
+                        });
                 }
                 return `Invite Sent Successfully`;
             }
