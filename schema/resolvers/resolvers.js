@@ -1,9 +1,9 @@
-import db from '../dbconnect.js'
-import { decryptPassword, encryptPassword } from '../hashing/hashing.js';
+import db from '../../dbconnect.js'
+import { decryptPassword, encryptPassword } from '../../Helper/hashing/hashing.js';
 import dotenv from 'dotenv';
 dotenv.config();
 import jwt from 'jsonwebtoken';
-import { SendEmail } from '../mailing.js';
+import { setMailOptions } from '../../Helper/mailing/mailing.js';
 
 
 export const resolvers = {
@@ -14,6 +14,8 @@ export const resolvers = {
                     throw new Error('Unauthorized');
                 }
                 const user_id = user?.decoded?.user_id;
+                if(!user_id || user_id === "")
+                        throw new Error("User ID not found in token");
                 const { rows } = await db.query(`SELECT * FROM users WHERE user_id = $1 AND deleted_at IS NULL`, [user_id]);
                 if (rows?.length === 0) {
                     throw new Error('User not found');
@@ -74,7 +76,7 @@ export const resolvers = {
                 throw new Error("Group Invitaion Fetching failed ", err.message);
             }
         },
-        getGroupJoinRequests: async (_, { email }) => {
+        getGroupJoinRequestsForUser: async (_, { email }) => {
             try {
                 const { rows: requests } = await db.query(`
                     SELECT gr.*, g.name AS group_name, u.name AS admin_name FROM group_requests gr 
@@ -101,7 +103,7 @@ export const resolvers = {
                     SELECT gm.* FROM group_members gm 
                     INNER JOIN users u 
                         ON gm.user_id = u.user_id 
-                    WHERE gm.group_id = $1 AND gm.deleted_at IS NULL AND u.deleted_at IS NULL`, [parent?.group_id]);
+                    WHERE gm.group_id = $1 AND gm.deleted_at IS NULL AND u.deleted_at IS NULL ORDER BY gm.role DESC `, [parent?.group_id]);
                 return members;
             }
             catch (err) {
@@ -144,13 +146,12 @@ export const resolvers = {
         },
         signup: async (_, { name, email, password }) => {
             try {
-                const { rows: userExists } = await db.query(`SELECT * FROM users WHERE email = $1`, [email]);
-                if (userExists?.length === 0 || userExists[0]?.deleted_at !== null) {
-                    const { rows: requests } = await db.query(`SELECT * FROM group_requests WHERE email = $1`, [userExists[0]?.email]);
-                    if (requests?.length > 0) {
-                        await db.query(`UPDATE group_requests SET registered = $1 WHERE email = $2`, [true, userExists[0]?.email]);
-                    }
+                const { rows: userEmailExists } = await db.query(`SELECT * FROM group_requests WHERE email = $1`, [email]);
+                if (userEmailExists[0]) {
+                    await db.query(`UPDATE group_requests SET user_registered = $1 WHERE email = $2`, [true, email]);
                 }
+                const { rows: userExists } = await db.query(`SELECT * FROM users WHERE email = $1`, [email]);
+
                 if (userExists?.length === 0) {  // New user
                     const hashedPassword = encryptPassword(password);
                     const { rows: register } = await db.query(`INSERT INTO users(name, email, password) VALUES($1, $2, $3) RETURNING user_id`, [name, email, hashedPassword]);
@@ -287,7 +288,7 @@ export const resolvers = {
                 if (user) {
                     if (user?.deleted_at === null) {
                         const roleToChange = user?.role === "member" ? "admin" : "member";
-                        const { rows } = await db.query(`
+                        await db.query(`
                                 UPDATE group_members SET role = $1 
                                     WHERE member_id = $2`, [roleToChange, member_id]);
                         return `Now User Role in Group ${roleToChange}`;
@@ -317,17 +318,17 @@ export const resolvers = {
                 const { rows: groupdata } = await db.query(`SELECT name FROM groups WHERE group_id = $1`, [adminInGroup?.group_id]);
                 const { rows: adminProfile } = await db.query(`SELECT email, name FROM users WHERE user_id = $1`, [adminInGroup?.user_id]);
                 for (const requestID of requestIDs) {
-                    const {rows: requestRecord} = await db.query(`UPDATE group_requests SET requested_at = CURRENT_TIMESTAMP, status = $1 WHERE request_id = $2 RETURNING email`, ['requested', requestID]);
+                    const { rows: requestRecord } = await db.query(`UPDATE group_requests SET requested_at = CURRENT_TIMESTAMP, status = $1 WHERE request_id = $2 RETURNING email`, ['requested', requestID]);
                     const email = requestRecord[0]?.email;
-                    if(email){
-                        SendEmail(
+                    if (email) {
+                        setMailOptions(
                             {
                                 destinationEmail: email,
                                 subject: "Invite to Join Group in Travence",
                                 message: `You have been invited by ${adminProfile[0]?.name} to join the Group "${groupdata[0]?.name}" on Travence!`
                             });
                     }
-                    
+
                 }
                 return "Invite Resent Successfully";
             }
@@ -388,11 +389,21 @@ export const resolvers = {
                          VALUES ($1, $2, $3)`,
                         [email, adminInGroup?.member_id, registered]);
 
-                    SendEmail(
+                    setMailOptions(
                         {
                             destinationEmail: email,
                             subject: "Invite to Join Group in Travence",
-                            message: `You have been invited by ${adminProfile[0]?.name} to join the group "${groupdata[0]?.name}" on Travence!`
+                            message: 
+                            ( registered ?  
+                                `<html><p>You have been invited by ${adminProfile[0]?.name} to join the group "${groupdata[0]?.name}" on Travence!</p><br>
+                                <p>Click the link and Login with Travence</p><br>
+                                <a href="https://2j2b6xw5-3000.inc1.devtunnels.ms/signin">Login Here</a></html>`
+                                :  
+                                `<p>You have been invited by ${adminProfile[0]?.name} to join the group "${groupdata[0]?.name}" on Travence!</p><br>
+                                <p>Click the link to Signup with Travence</p><br>
+                                <a href="https://2j2b6xw5-3000.inc1.devtunnels.ms/signup">Sign Up Here</a>`  
+                                )
+                            
                         });
                 }
                 return `Invite Sent Successfully`;
@@ -401,7 +412,40 @@ export const resolvers = {
                 console.log(err.message);
                 throw new Error("Sending Group Requests failed ", err?.message);
             }
-        }
+        },
+        acceptGroupJoinRequest: async (_, { admin_id, user_id }) => {
+            try {
+                const adminInGroup = await resolvers.Query.group_member(_, { member_id: admin_id });
+                if(adminInGroup){
+                    const {rows: MemberExists} = await db.query(`SELECT * FROM group_members WHERE group_id = $1 AND user_id = $2`,[adminInGroup?.group_id, user_id]);
+                    if(MemberExists[0]?.member_id || MemberExists[0]?.deleted_at === null){
+                        await resolvers.Mutation.addUserToGroup(_,{group_id: adminInGroup?.group_id, user_id: user_id});
+                        const {rows: user} = await db.query(`SELECT * FROM users WHERE user_id = $1`,[user_id]);
+                        await db.query(`DELETE FROM group_requests WHERE requested_by IN (SELECT member_id FROM group_members WHERE group_id = $1 AND email = $2)`,[adminInGroup?.group_id, user[0]?.email]);
+                    }else{
+                        throw new Error("You are already in that Group");
+                    }
+                }else{
+                    throw new Error("Admin not Present");
+                }
+                return "Joined Successfully";
+            }
+            catch (err) {
+                console.log(err?.message);
+                throw new Error("Accepting Group join request failed ", err?.message);
+            }
+
+        },
+        declineGroupJoinRequest: async (_, { request_id }) => {
+            try{
+                await db.query(`UPDATE group_requests SET status = $1 WHERE request_id = $2`,['rejected', request_id]);
+                return "Declined Successfully";
+            }
+            catch(err){
+                console.log(err?.message);
+                throw new Error("Decline Group Join request failed ", err?.message);
+            }
+        },
     }
 }
 

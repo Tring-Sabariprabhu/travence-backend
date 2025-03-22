@@ -9,17 +9,16 @@ const transporter = nodemailer.createTransport({
     pass: process.env.EMAIL_PASSWORD
   }
 });
-export const SendEmail = ({destinationEmail, subject, message}) => {
+export const setMailOptions = ({destinationEmail, subject, message}) => {
   if(destinationEmail){
     const mailOptions = {
       from: process.env.EMAIL,
       to: destinationEmail,
       subject: subject,
-      text: message
+      html: message
     };
   
     // Send email
-  
     transporter.sendMail(mailOptions, (error, info) => {
       if (error) {
         console.log('Error:', error);

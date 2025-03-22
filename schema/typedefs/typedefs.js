@@ -49,7 +49,7 @@ export const typeDefs = `#graphql
         group_member(member_id: String!): GroupMember!
 
         getGroupInvitedList(admin_id: String!): [GroupInviteRequest!]!
-        getGroupJoinRequests(email: String!): [GroupInviteRequest!]!
+        getGroupJoinRequestsForUser(email: String!): [GroupInviteRequest!]!
     }
     type Mutation {
         signup(email: String!, name: String!, password: String!): Auth
@@ -66,6 +66,9 @@ export const typeDefs = `#graphql
         sendGroupJoinRequests(admin_id: String!, emails: [String!]!): String
         resendGroupJoinRequests(admin_id: String!, requestIDs: [String!]!): String
         deleteGroupJoinRequests(admin_id: String!, requestIDs: [String!]!): String
+
+        acceptGroupJoinRequest( admin_id: String!, user_id: String!): String
+        declineGroupJoinRequest(request_id: String!): String
     }
 
 `

@@ -1,8 +1,8 @@
 import { ApolloServer } from 'apollo-server-express';
 import express from 'express';
 import jwt from 'jsonwebtoken';
-import { resolvers } from './schema/resolvers.js';
-import { typeDefs } from './schema/typedefs.js';
+import { resolvers } from './schema/resolvers/resolvers.js';
+import { typeDefs } from './schema/typedefs/typedefs.js';
 import dotenv from 'dotenv';
 dotenv.config();
 
@@ -23,6 +23,7 @@ const server = new ApolloServer({
       } catch (err) {
         throw new Error('Invalid or expired token');
       }
+      
     }
     return { token, decoded };
   }
