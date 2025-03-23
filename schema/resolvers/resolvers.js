@@ -3,7 +3,7 @@ import { decryptPassword, encryptPassword } from '../../Helper/hashing/hashing.j
 import dotenv from 'dotenv';
 dotenv.config();
 import jwt from 'jsonwebtoken';
-import { setMailOptions } from '../../Helper/mailing/mailing.js';
+import { setMailAndSend } from '../../Helper/mailing/mailing.js';
 
 
 export const resolvers = {
@@ -321,7 +321,7 @@ export const resolvers = {
                     const { rows: requestRecord } = await db.query(`UPDATE group_requests SET requested_at = CURRENT_TIMESTAMP, status = $1 WHERE request_id = $2 RETURNING email`, ['requested', requestID]);
                     const email = requestRecord[0]?.email;
                     if (email) {
-                        setMailOptions(
+                        setMailAndSend(
                             {
                                 destinationEmail: email,
                                 subject: "Invite to Join Group in Travence",
@@ -389,7 +389,7 @@ export const resolvers = {
                          VALUES ($1, $2, $3)`,
                         [email, adminInGroup?.member_id, registered]);
 
-                    setMailOptions(
+                    setMailAndSend(
                         {
                             destinationEmail: email,
                             subject: "Invite to Join Group in Travence",
@@ -418,7 +418,7 @@ export const resolvers = {
                 const adminInGroup = await resolvers.Query.group_member(_, { member_id: admin_id });
                 if(adminInGroup){
                     const {rows: MemberExists} = await db.query(`SELECT * FROM group_members WHERE group_id = $1 AND user_id = $2`,[adminInGroup?.group_id, user_id]);
-                    if(MemberExists[0]?.member_id || MemberExists[0]?.deleted_at === null){
+                    if(MemberExists[0]?.member_id === null || MemberExists[0]?.deleted_at !== null){
                         await resolvers.Mutation.addUserToGroup(_,{group_id: adminInGroup?.group_id, user_id: user_id});
                         const {rows: user} = await db.query(`SELECT * FROM users WHERE user_id = $1`,[user_id]);
                         await db.query(`DELETE FROM group_requests WHERE requested_by IN (SELECT member_id FROM group_members WHERE group_id = $1 AND email = $2)`,[adminInGroup?.group_id, user[0]?.email]);
