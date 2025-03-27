@@ -19,16 +19,16 @@
   },
   "name": "backend",
   "version": "1.0.0",
-  "main": "CreateServer.js",
+  "main": "Server.js",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
-    "start": "nodemon CreateServer.ts"
+    "start": "nodemon Server.ts"
   },
   "author": "",
   "license": "ISC",
   "description": "",
   "devDependencies": {
     "@types/crypto-js": "^4.2.2",
-    "sequelize-cli": "^6.6.2",
+    "sequelize-cli": "^6.6.2"
   }
 }

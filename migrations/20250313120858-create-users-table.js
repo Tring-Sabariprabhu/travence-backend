@@ -23,6 +23,10 @@ module.exports = {
           isEmail: true,      
         }
       },
+      image: {
+        type: Sequelize.TEXT,
+        allowNull: true
+      },
       password: {
         type: Sequelize.STRING,
         allowNull: false,    

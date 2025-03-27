@@ -20,18 +20,16 @@ module.exports = {
       budget: {
         type: Sequelize.DECIMAL(15, 2),
         allowNull: true
-      },
+      },  
       group_id: {
         type: Sequelize.INTEGER,
         allowNull: false
       },
-      checklist: {
-        type: Sequelize.JSONB,  
-        allowNull: true
-      },
-      to_do: {
-        type: Sequelize.JSONB,  
-        allowNull: true
+     
+      status:{
+        type: Sequelize.ENUM('upcoming, completed, canceled'),
+        defaultValue: 'upcoming',
+        allowNull: false
       },
       created_at: {
         type: Sequelize.DATE,

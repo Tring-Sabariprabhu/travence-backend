@@ -5,6 +5,7 @@ export const typeDefs = `#graphql
         email: String
         name: String
         image: String
+        password: String
         created_at: DATETIME
         updated_at: DATETIME
     }
@@ -40,7 +41,6 @@ export const typeDefs = `#graphql
     }
     type Auth{
         token: String
-        user_id: String
     }
     type Query {
         getAuthUser: User
@@ -54,6 +54,8 @@ export const typeDefs = `#graphql
     type Mutation {
         signup(email: String!, name: String!, password: String!): Auth
         signin(email: String!, password: String!): Auth
+
+        updateUser(user_id: String!, name: String!, password: String!, image: String): String
 
         createGroup(name: String!, description: String, created_by: String!): String
         updateGroup(name: String!, description: String, group_id: String!): String
